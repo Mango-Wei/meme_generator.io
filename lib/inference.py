@@ -7,8 +7,8 @@ import os
 import pandas as pd
 import numpy as np
 import re
-OPENAI_API_KEY="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"
-client = OpenAI(api_key = OPENAI_API_KEY)
+something="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"
+client = OpenAI(api_key = something)
 
 def analyze_conversation_to_meme(text):
     prompt = f"""
