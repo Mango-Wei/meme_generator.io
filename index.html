@@ -158,6 +158,7 @@
 <div class="container">
   <div id="landing-page" class="center">
     <h1>Select Participants</h1>
+    <input type="text" id="username-input" placeholder="Enter your name" style="margin-bottom: 10px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; width: 80%;">
     <button class="button" onclick="selectNumUsers(1)">Monologue (1)</button>
     <button class="button" onclick="selectNumUsers(2)">Direct Chat (2)</button>
     <button class="button" onclick="selectNumUsers(3)">Group Chat (3+)</button>
@@ -186,15 +187,14 @@
 </div>
 
 <script>
-  // Replace this with your actual Heroku backend URL
-  const backendUrl = "https://meme-generator-b8a2e23ef765.herokuapp.com";
 
+
+  const backendUrl = " https://meme-generator-b8a2e23ef765.herokuapp.com";
   let numUsers = localStorage.getItem('numUsers') ? parseInt(localStorage.getItem('numUsers')) : 2;
   let chatHistory = localStorage.getItem('chatHistory') ? JSON.parse(localStorage.getItem('chatHistory')) : [];
   let typingBubbleVisible = false;
-
-  // Define a unique color for each user
-  const userColors = ["#ff5733", "#33c1ff", "#85e085", "#ffd633"]; // Add more colors if needed
+  const userColors = ["#ff5733", "#33c1ff", "#85e085", "#ffd633"];
+  let selectedMemeIndex = null;
 
   if (localStorage.getItem('chatPageVisible')) {
     document.getElementById('landing-page').classList.add('hidden');
@@ -204,7 +204,10 @@
 
   function selectNumUsers(users) {
     numUsers = users;
+    const username = document.getElementById('username-input').value;
     localStorage.setItem('numUsers', numUsers);
+    localStorage.setItem('username', username);
+
     document.getElementById('landing-page').classList.add('hidden');
     document.getElementById('chat-page').classList.remove('hidden');
     localStorage.setItem('chatPageVisible', true);
@@ -244,7 +247,7 @@
     if (chatInput.value.trim() !== '') {
       hideTyping();
       const userIndex = chatHistory.length % numUsers;
-      const isSent = userIndex === 0; // First user (User1) is considered as the sender
+      const isSent = userIndex === 0;
       const chatBubbleClass = isSent ? 'sent' : 'received';
       chatHistory.push({ text: chatInput.value, class: chatBubbleClass, userIndex: userIndex });
       localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
@@ -260,22 +263,19 @@
       const chatRow = document.createElement('div');
       chatRow.className = `chat-row ${entry.class}`;
 
-      // Create a profile bubble for the user with a unique color
       const profileBubble = document.createElement('div');
       profileBubble.className = 'profile-bubble';
       profileBubble.style.backgroundColor = userColors[entry.userIndex];
 
-      // Create the chat bubble
       const chatBubble = document.createElement('div');
       chatBubble.className = `chat-bubble ${entry.class}`;
       chatBubble.textContent = entry.text;
 
-      // Append profile bubble and chat bubble based on sent/received status
       if (entry.class === 'sent') {
-        chatRow.appendChild(chatBubble); // Sent bubble on right
+        chatRow.appendChild(chatBubble);
         chatRow.appendChild(profileBubble);
       } else {
-        chatRow.appendChild(profileBubble); // Received bubble on left
+        chatRow.appendChild(profileBubble);
         chatRow.appendChild(chatBubble);
       }
 
@@ -285,40 +285,23 @@
   }
 
   function analyzeChat() {
-  console.log("Generate button clicked. analyzeChat function is called.");
-
-  fetch(`${backendUrl}/generate_meme_options`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_history: chatHistory })
-  })
+    fetch(`${backendUrl}/generate_meme_options`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_history: chatHistory })
+    })
     .then(response => response.json())
     .then(data => {
       const memeOptionsDiv = document.getElementById('meme-options');
       memeOptionsDiv.innerHTML = '';
+      const memeOptions = data.meme_options;
+      const selectedTemplates = [memeOptions[0], memeOptions[1], memeOptions[2]];
 
-      // Get meme options and shuffle them
-      let memeOptions = data.meme_options;
-
-      // Select the first template and the third as given
-      const firstTemplate = memeOptions[0];
-      const thirdTemplate = memeOptions[memeOptions.length - 1];
-
-      // Randomly select the second template from the remaining options
-      let secondTemplate;
-      do {
-        secondTemplate = memeOptions[Math.floor(Math.random() * memeOptions.length)];
-      } while (secondTemplate === firstTemplate || secondTemplate === thirdTemplate);
-
-      // Order of selected templates
-      const selectedTemplates = [firstTemplate, secondTemplate, thirdTemplate];
-
-      // Display the images in the specified order
       selectedTemplates.forEach((templateName, index) => {
         const img = document.createElement('img');
         img.src = `./templates/${templateName}.jpg`;
         img.alt = `Meme Option ${index + 1}`;
-        img.onclick = () => selectMeme(templateName);
+        img.onclick = () => selectMeme(templateName, index + 1);
         memeOptionsDiv.appendChild(img);
       });
 
@@ -328,28 +311,55 @@
     .catch(error => {
       console.error('Error fetching meme options:', error);
     });
-}
+  }
 
-function selectMeme(templateName) {
-  fetch(`${backendUrl}/generate_final_meme`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ selected_meme: templateName, chat_history: chatHistory })
-  })
+  function selectMeme(templateName, memeIndex) {
+    selectedMemeIndex = memeIndex;
+    fetch(`${backendUrl}/generate_final_meme`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selected_meme: templateName, chat_history: chatHistory })
+    })
     .then(response => response.blob())
     .then(blob => {
       const imageUrl = URL.createObjectURL(blob);
       const finalMemeImg = document.getElementById('final-meme');
       finalMemeImg.src = imageUrl;
       finalMemeImg.alt = "Generated Meme";
-
       document.getElementById('meme-selection-page').classList.add('hidden');
       document.getElementById('meme-display-page').classList.remove('hidden');
+      saveToJSON();
     })
     .catch(error => {
       console.error('Error generating final meme:', error);
       alert("Failed to generate meme. Please try again.");
     });
+  }
+
+  async function saveToJSON() {
+    const newData = {
+        username: localStorage.getItem('username'),
+        chatHistory: chatHistory,
+        numUsers: numUsers,
+        selectedMemeIndex: selectedMemeIndex,
+    };
+
+    // Send the data to the remote server
+    try {
+        const response = await fetch(' https://meme-generator-b8a2e23ef765.herokuapp.com/save_chat_data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newData),
+        });
+
+        if (response.ok) {
+        console.log("Data saved to server successfully.");
+        } else {
+        console.error("Failed to save data to server.");
+        }
+    } catch (error) {
+        console.error("Error sending data to server:", error);
+    }
 }
 
 
