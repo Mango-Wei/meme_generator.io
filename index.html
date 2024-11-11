@@ -330,28 +330,19 @@
     });
 }
 
-  function selectMeme(templateName) {
+function selectMeme(templateName) {
   fetch(`${backendUrl}/generate_final_meme`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ selected_meme: templateName })
+    body: JSON.stringify({ selected_meme: templateName, chat_history: chatHistory })
   })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Server responded with status ${response.status}`);
-      }
-      return response.blob();  // Get the binary data as a blob
-    })
+    .then(response => response.blob())
     .then(blob => {
-      // Create a URL for the blob and set it as the image source
       const imageUrl = URL.createObjectURL(blob);
-      
-      // Display the generated meme
       const finalMemeImg = document.getElementById('final-meme');
       finalMemeImg.src = imageUrl;
       finalMemeImg.alt = "Generated Meme";
 
-      // Hide the meme selection page and show the final meme display page
       document.getElementById('meme-selection-page').classList.add('hidden');
       document.getElementById('meme-display-page').classList.remove('hidden');
     })
