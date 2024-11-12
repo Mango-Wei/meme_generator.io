@@ -4,7 +4,6 @@
   <meta charset="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meme Generator - Multi-user Chat</title>
   <style>
-    /* Center the container and make it responsive */
     body { 
       font-family: Arial, sans-serif; 
       display: flex; 
@@ -15,9 +14,8 @@
       margin: 0; 
     }
 
-    /* Main app container */
     .container { 
-      width: 60%; 
+      width: 80%; 
       max-width: 1000px; 
       min-width: 500px; 
       background-color: #fff; 
@@ -38,6 +36,11 @@
       box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1); 
       background-color: #007aff; 
       color: white; 
+    }
+
+    .button:disabled {
+      background-color: #a0a0a0;
+      cursor: not-allowed;
     }
     
     .chat-history { 
@@ -67,7 +70,6 @@
       border-radius: 50%; 
     }
     
-    /* Chat bubbles styled to look like iMessage */
     .chat-bubble { 
       max-width: 70%; 
       padding: 10px 15px; 
@@ -89,7 +91,6 @@
       border-radius: 18px 18px 18px 0px; 
     }
 
-    /* Typing bubble with pulsing animation */
     .typing-bubble {
       background-color: #e5e5ea;
       color: black;
@@ -127,6 +128,7 @@
       from { opacity: 0.3; }
       to { opacity: 1; }
     }
+    
 
     #meme-options img { 
       width: 200px; 
@@ -141,7 +143,6 @@
       border-radius: 10px; 
     }
 
-    /* Input field styling */
     #chat-input {
       width: 75%; 
       padding: 10px; 
@@ -156,9 +157,38 @@
 <body>
 
 <div class="container">
-  <div id="landing-page" class="center">
+  <div id="welcome-page" class="center" style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 1200px; min-width: 600px; padding: 0px; text-align: center; border-radius: 10px; height: 60vh; background-image: url('meme_collage.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; background-color: rgba(255, 255, 255, 0.3); background-blend-mode: overlay;">
+  
+    <!-- Top Row with Logo on Left and Title in Center -->
+    <div style="display: flex; justify-content: center; align-items: center; width: 100%; padding: 0 20px; position: relative;">
+      <!-- Logo in the top-left corner -->
+      <img src="Dartmouth.jpg" alt="Logo" style="width: 50px; position: absolute; left: 20px; top: 0;">
+      <!-- Title centered -->
+      <h1 style="color: rgb(255, 255, 255); margin: 0; 
+      background-color: rgba(93, 93, 93, 0.7); 
+      padding: 10px 20px; border-radius: 8px; 
+      display: inline-block; position: relative; top: 200px;">
+        Meme Generator
+      </h1>
+    </div>
+  
+    <!-- Centered Input and Button -->
+    <div style="display: flex; flex-direction: column; align-items: center; flex-grow: 1; justify-content: center; gap: 10px;">
+      <input type="text" id="username-input" placeholder="Enter your name" oninput="toggleNextButton()" style="padding: 10px; border-radius: 5px; border: 1px solid #ffffff; width: 90%; background-color: rgba(255, 255, 255, 0.8);">
+      <button class="button" id="next-button" onclick="showParticipantSelection()" disabled>Next</button>
+    </div>
+  </div>
+  
+  <div id="landing-page" class="center hidden" style="width: 100%; max-width: 1200px; min-width: 600px; padding: 0px; text-align: center; background-color: #ffffff; border-radius: 10px;">
     <h1>Select Participants</h1>
-    <input type="text" id="username-input" placeholder="Enter your name" style="margin-bottom: 10px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; width: 80%;">
+    <button class="button" onclick="selectNumUsers(1)">Monologue (1)</button>
+    <button class="button" onclick="selectNumUsers(2)">Direct Chat (2)</button>
+    <button class="button" onclick="selectNumUsers(3)">Group Chat (3+)</button>
+  </div>
+  
+
+  <div id="landing-page" class="center hidden">
+    <h1>Select number of Users in the Chat</h1>
     <button class="button" onclick="selectNumUsers(1)">Monologue (1)</button>
     <button class="button" onclick="selectNumUsers(2)">Direct Chat (2)</button>
     <button class="button" onclick="selectNumUsers(3)">Group Chat (3+)</button>
@@ -168,40 +198,42 @@
     <h1>Meme Generator Chat</h1>
     <div class="chat-history" id="chat-history"></div>
     <input type="text" id="chat-input" placeholder="Enter text" oninput="showTyping()" onblur="hideTyping()" onkeypress="handleEnter(event)">
-    <button class="button" onclick="analyzeChat()">Generate Meme from Chat</button>
+    <button class="button" onclick="analyzeChat()" disabled>Generate Meme from Chat</button>
     <button class="button" onclick="restart()">Restart</button>
   </div>
 
   <div id="meme-selection-page" class="center hidden">
     <h1>Select a Meme Template</h1>
-    <div id="meme-options">
-      <!-- Meme template images will be inserted here by JavaScript -->
-    </div>
+    <div id="meme-options"></div>
   </div>
 
   <div id="meme-display-page" class="center hidden">
     <h1>Generated Meme</h1>
     <img id="final-meme" alt="Final Meme">
+    <p>Don't forget to finish our evaluation: <a href="https://forms.gle/JwWhFJrS2hhdPQNx5" target="_blank">https://forms.gle/JwWhFJrS2hhdPQNx5</a></p>
     <button class="button" onclick="restart()">Restart</button>
   </div>
 </div>
 
 <script>
-
-
   const backendUrl = " https://meme-generator-b8a2e23ef765.herokuapp.com";
   let numUsers = localStorage.getItem('numUsers') ? parseInt(localStorage.getItem('numUsers')) : 2;
   let chatHistory = localStorage.getItem('chatHistory') ? JSON.parse(localStorage.getItem('chatHistory')) : [];
   let typingBubbleVisible = false;
   const userColors = ["#ff5733", "#33c1ff", "#85e085", "#ffd633"];
   let selectedMemeIndex = null;
+  let hasSubmitted = false; // To prevent multiple submissions
+  let memeSelected = false;
 
-  if (localStorage.getItem('chatPageVisible')) {
-    document.getElementById('landing-page').classList.add('hidden');
-    document.getElementById('chat-page').classList.remove('hidden');
-    displayChatHistory();
+  function toggleNextButton() {
+    const usernameInput = document.getElementById('username-input').value.trim();
+    document.getElementById('next-button').disabled = !usernameInput;
   }
 
+  function showParticipantSelection() {
+    document.getElementById('welcome-page').style.display = 'none'; // Hide welcome page
+    document.getElementById('landing-page').classList.remove('hidden'); // Show landing page
+  }
   function selectNumUsers(users) {
     numUsers = users;
     const username = document.getElementById('username-input').value;
@@ -254,6 +286,7 @@
       chatInput.value = '';
       displayChatHistory();
     }
+    document.querySelector("button[onclick='analyzeChat()']").disabled = chatHistory.length === 0;
   }
 
   function displayChatHistory() {
@@ -285,6 +318,16 @@
   }
 
   function analyzeChat() {
+    if (hasSubmitted) return; // Prevent multiple submissions
+    hasSubmitted = true;
+    const generateButton = document.querySelector("button[onclick='analyzeChat()']");
+    generateButton.innerHTML = "Loading...";
+    generateButton.disabled = true;
+
+    // Hide chat input and restart button
+    document.getElementById('chat-input').style.display = 'none';
+    document.querySelector("button[onclick='restart()']").style.display = 'none';
+
     fetch(`${backendUrl}/generate_meme_options`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -292,6 +335,8 @@
     })
     .then(response => response.json())
     .then(data => {
+      generateButton.innerHTML = "Generate Meme from Chat";
+      generateButton.disabled = false;
       const memeOptionsDiv = document.getElementById('meme-options');
       memeOptionsDiv.innerHTML = '';
       const memeOptions = data.meme_options;
@@ -310,11 +355,32 @@
     })
     .catch(error => {
       console.error('Error fetching meme options:', error);
+      alert("Failed to generate meme. Please try again.");
+      generateButton.innerHTML = "Generate Meme from Chat";
+      generateButton.disabled = false;
     });
   }
 
   function selectMeme(templateName, memeIndex) {
+    if (memeSelected) return; // Prevent multiple selections
+    memeSelected = true;
     selectedMemeIndex = memeIndex;
+
+    // Show loading overlay in the middle of the screen
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.style.position = 'fixed';
+    loadingOverlay.style.top = '50%';
+    loadingOverlay.style.left = '50%';
+    loadingOverlay.style.transform = 'translate(-50%, -50%)';
+    loadingOverlay.style.fontSize = '24px';
+    loadingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    loadingOverlay.style.color = 'white';
+    loadingOverlay.style.padding = '20px';
+    loadingOverlay.style.borderRadius = '10px';
+    loadingOverlay.style.zIndex = '1000';
+    loadingOverlay.innerHTML = 'Generating Meme...';
+    document.body.appendChild(loadingOverlay);
+
     fetch(`${backendUrl}/generate_final_meme`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -328,11 +394,14 @@
       finalMemeImg.alt = "Generated Meme";
       document.getElementById('meme-selection-page').classList.add('hidden');
       document.getElementById('meme-display-page').classList.remove('hidden');
+      document.body.removeChild(loadingOverlay); // Remove loading overlay
       saveToJSON();
     })
     .catch(error => {
       console.error('Error generating final meme:', error);
       alert("Failed to generate meme. Please try again.");
+      document.body.removeChild(loadingOverlay); // Remove loading overlay if there's an error
+      memeSelected = false; // Reset memeSelected flag in case of error
     });
   }
 
@@ -344,7 +413,6 @@
         selectedMemeIndex: selectedMemeIndex,
     };
 
-    // Send the data to the remote server
     try {
         const response = await fetch(' https://meme-generator-b8a2e23ef765.herokuapp.com/save_chat_data', {
         method: 'POST',
@@ -362,23 +430,23 @@
     }
 }
 
+function restart() {
+  localStorage.clear();
+  chatHistory = [];
+  numUsers = 2;
+  document.getElementById('chat-history').innerHTML = '';
 
-  function restart() {
-    localStorage.clear();
-    chatHistory = [];
-    numUsers = 2;
-    document.getElementById('chat-history').innerHTML = '';
+  // Hide all pages
+  document.getElementById('chat-page').classList.add('hidden');
+  document.getElementById('meme-selection-page').classList.add('hidden');
+  document.getElementById('meme-display-page').classList.add('hidden');
+  document.getElementById('welcome-page').classList.add('hidden');
 
-    document.getElementById('chat-page').classList.add('hidden');
-    document.getElementById('meme-selection-page').classList.add('hidden');
-    document.getElementById('meme-display-page').classList.add('hidden');
-    document.getElementById('landing-page').classList.remove('hidden');
-  }
+  // Show the participant selection page
+  document.getElementById('landing-page').classList.remove('hidden');
+}
 
-  if (localStorage.getItem('finalMeme')) {
-    document.getElementById('meme-display-page').classList.remove('hidden');
-    document.getElementById('final-meme').src = localStorage.getItem('finalMeme');
-  }
+
 </script>
 
 </body>
