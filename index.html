@@ -180,21 +180,16 @@
   </div>
   
   <div id="landing-page" class="center hidden" style="width: 100%; max-width: 1200px; min-width: 600px; padding: 0px; text-align: center; background-color: #ffffff; border-radius: 10px;">
-    <h1>Select Participants</h1>
+    <h1>Select number of Users in the Chat</h1>
     <button class="button" onclick="selectNumUsers(1)">Monologue (1)</button>
     <button class="button" onclick="selectNumUsers(2)">Direct Chat (2)</button>
     <button class="button" onclick="selectNumUsers(3)">Group Chat (3+)</button>
   </div>
   
 
-  <div id="landing-page" class="center hidden">
-    <h1>Select number of Users in the Chat</h1>
-    <button class="button" onclick="selectNumUsers(1)">Monologue (1)</button>
-    <button class="button" onclick="selectNumUsers(2)">Direct Chat (2)</button>
-    <button class="button" onclick="selectNumUsers(3)">Group Chat (3+)</button>
-  </div>
 
-  <div id="chat-page" class="center hidden">
+
+  <div id="chat-page" class="center hidden" style = "width: 100%;  align-items: center; padding: 0px; justify-content: center;"> 
     <h1>Meme Generator Chat</h1>
     <div class="chat-history" id="chat-history"></div>
     <input type="text" id="chat-input" placeholder="Enter text" oninput="showTyping()" onblur="hideTyping()" onkeypress="handleEnter(event)">
@@ -258,8 +253,18 @@
       typingBubble.className = 'typing-bubble';
       typingBubble.id = 'typing-bubble';
 
-      const userIndex = chatHistory.length % numUsers + 1;
+      const userIndex = (chatHistory.length % numUsers) + 1;
+
+      // Set the content of the typing bubble
       typingBubble.innerHTML = `User ${userIndex} is typing <span class="typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span>`;
+
+      // Apply different alignment based on the user index
+      if (userIndex === 1 || userIndex === 3) {
+        typingBubble.style.alignSelf = 'flex-end';
+      } else if (userIndex === 2) {
+        typingBubble.style.alignSelf = 'flex-start';
+      }
+
       chatHistoryDiv.appendChild(typingBubble);
       typingBubbleVisible = true;
       chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
@@ -434,16 +439,25 @@ function restart() {
   localStorage.clear();
   chatHistory = [];
   numUsers = 2;
+
+  // Clear chat history display
   document.getElementById('chat-history').innerHTML = '';
 
-  // Hide all pages
+  // Hide all other pages
+  document.getElementById('welcome-page').classList.add('hidden');
   document.getElementById('chat-page').classList.add('hidden');
   document.getElementById('meme-selection-page').classList.add('hidden');
   document.getElementById('meme-display-page').classList.add('hidden');
-  document.getElementById('welcome-page').classList.add('hidden');
 
-  // Show the participant selection page
+  // Disable the Generate Meme button initially
+  document.querySelector("button[onclick='analyzeChat()']").disabled = true;
+  
+  // Show the landing page for selecting number of users
   document.getElementById('landing-page').classList.remove('hidden');
+
+  // Ensure chat input and restart button are ready for use when reaching the chat page
+  document.getElementById('chat-input').style.display = 'block';
+  document.querySelector("button[onclick='restart()']").style.display = 'inline-block';
 }
 
 
