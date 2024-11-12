@@ -360,11 +360,24 @@
     })
     .catch(error => {
       console.error('Error fetching meme options:', error);
-      alert("Failed to generate meme. Please try again.");
+      alert("Chat is too short to generate a meme, Please provide a longer chat and try again.");
+
+      // Reset state and clear chat history
+      hasSubmitted = false;
+      chatHistory = []; // Clear chat history
+
+      // Restore button state and navigate back to chat page
       generateButton.innerHTML = "Generate Meme from Chat";
       generateButton.disabled = false;
+      document.getElementById('chat-page').classList.remove('hidden');
+      document.getElementById('meme-selection-page').classList.add('hidden');
+      document.getElementById('chat-input').style.display = 'block';
+      document.querySelector("button[onclick='restart()']").style.display = 'block';
     });
-  }
+}
+
+
+
 
   function selectMeme(templateName, memeIndex) {
     if (memeSelected) return; // Prevent multiple selections
